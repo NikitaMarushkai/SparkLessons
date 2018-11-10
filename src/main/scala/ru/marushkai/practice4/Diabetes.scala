@@ -13,11 +13,16 @@ object Diabetes {
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
 
-    val fileName = "src/resources/diabets.csv"
+    val fileName = "hdfs://10.8.51.6:9000/nikita/diabets.csv"
+
     val sparkSession = SparkSession
       .builder()
       .appName("Diabetes logistic regression")
-      .master("local[2]")
+      .master("spark://10.8.51.6:7077")
+      .config("spark.executor.memory", "10g")
+      .config("spark.driver.memory", "10g")
+      .config("spark.driver.maxResultSize","10g")
+      .config("spark.logConf","true")
       .getOrCreate()
 
     import sparkSession.implicits._
