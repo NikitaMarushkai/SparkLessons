@@ -12,6 +12,8 @@ object MovieLens {
 
   case class Movie(movieId: Int, movieName: String, rating: Float)
 
+  case class UserMovie(userId: Int, movieId: Int)
+
   def parseRating(str: String): Rating = {
     val fields = str.split("::")
     Rating(fields(0).toInt, fields(1).toInt, fields(2).toFloat, fields(3).toLong)
@@ -21,18 +23,18 @@ object MovieLens {
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
 
-//    val personalRatingsFile = "./src/resources/movielens/medium/personalRatings.txt"
-//    val moviesFile = "./src/resources/movielens/medium/movies.dat"
-//    val ratingsFile = "./src/resources/movielens/medium/ratings.dat"
+    val personalRatingsFile = "./src/resources/movielens/medium/personalRatings.txt"
+    val moviesFile = "./src/resources/movielens/medium/movies.dat"
+    val ratingsFile = "./src/resources/movielens/medium/ratings.dat"
 
-    val personalRatingsFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/personalRatings.txt"
-    val moviesFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/movies.dat"
-    val ratingsFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/ratings.dat"
+//    val personalRatingsFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/personalRatings.txt"
+//    val moviesFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/movies.dat"
+//    val ratingsFile = "hdfs://10.8.51.6:9000/nikita/movielens/medium/ratings.dat"
 
     val sparkSession = SparkSession
       .builder()
       .appName("MovieLens Recommendation system")
-//      .master("local[2]")
+      .master("local[2]")
       .config("spark.executor.memory", "10g")
       .config("spark.driver.memory", "10g")
       .config("spark.driver.maxResultSize","10g")
@@ -68,6 +70,10 @@ object MovieLens {
     // Get movies dictionary
     val movies = moviesRDD.collect.toMap
 
+    val allMoviesDf = movies.map(it => UserMovie(0, it._1)).toSeq.toDF()
+
+    allMoviesDf.show(10)
+
     println("Got " + numRatings + " ratings from "
       + numUsers + " users on " + numMovies + " movies.")
 
@@ -77,6 +83,8 @@ object MovieLens {
 
     training.show(10)
     test.show(10)
+
+//    movies.foreach(print)
 
     val als = new ALS()
       .setMaxIter(10)
@@ -109,5 +117,14 @@ object MovieLens {
     val myMovies = myPredictions.map(r => Movie(r.getInt(1), movies(r.getInt(1)), r.getFloat(3))).toDF
 
     myMovies.show(100)
+
+
+    val allMoviesPredictions = model.transform(allMoviesDf).na.fill(0)
+
+//    allMoviesPredictions.show(100)
+
+    val allMoviesToShow = allMoviesPredictions.map(r => Movie(r.getInt(1), movies(r.getInt(1)), r.getFloat(2))).toDF()
+
+    allMoviesToShow.orderBy(allMoviesToShow.col("rating").desc).show(100)
   }
 }
