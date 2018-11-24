@@ -91,6 +91,7 @@ object MovieLens {
       .setRegParam(0.01)
       .setUserCol("userId")
       .setItemCol("movieId")
+      .setNonnegative(true)
       .setRatingCol("rating")
 
     val model = als.fit(training)
