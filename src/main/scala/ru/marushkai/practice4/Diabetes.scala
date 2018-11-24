@@ -70,7 +70,7 @@ object Diabetes {
           .setMetricName("areaUnderROC")
 
     val results = new mutable.HashMap[Double, Double]()
-    for (i <- 1 to 99) {
+    for (i <- 1 to 5) {
       var lr = new LogisticRegression()
         .setMaxIter(500)
         .setRegParam(i * 0.01)
